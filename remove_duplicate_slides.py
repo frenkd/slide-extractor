@@ -9,7 +9,9 @@ import argparse
 def get_slide_number(image):
     w, h = image.size
     cropped_image = image.crop((w*0.8, h*0.9, w, h))
-    text = pytesseract.image_to_string(cropped_image, lang='eng', config='--psm 6')
+    # Convert the image to grayscale
+    grayscale_image = cropped_image.convert('L')
+    text = pytesseract.image_to_string(grayscale_image, lang='eng', config='--psm 6')
     slide_number = re.search(r'slide (\d+)', text, re.IGNORECASE)
     return int(slide_number.group(1)) if slide_number else None
 
@@ -24,6 +26,9 @@ def remove_duplicate_slides(pdf_path, keep_first_page):
     for page in tqdm(range(1 if keep_first_page else 0, len(pdf_reader.pages))):
         temp_images = convert_from_path(pdf_path, first_page=page+1, last_page=page+1)
         slide_number = get_slide_number(temp_images[0])
+        if slide_number is None:
+            print(f"Warning: Page {page+1} is not a slide (slide number not recognised)")
+            continue
         if slide_number is not None and slide_number > current_slide_number:
             current_slide_number = slide_number
             last_slide_indices[current_slide_number] = page
@@ -38,6 +43,18 @@ def remove_duplicate_slides(pdf_path, keep_first_page):
         pdf_writer.write(output_file)
 
     print(f"Processed PDF saved as: {output_pdf_path}")
+
+    print(f"Number of slides in the original PDF: {len(pdf_reader.pages)}")
+    print(f"Number of slides in the processed PDF: {len(pdf_writer.pages)}")
+
+    if (len(last_slide_indices) + 1 if keep_first_page else 0) != current_slide_number:
+        print("Warning: The number of slides in the processed PDF is not correct.")
+        print("Last slide number: ", current_slide_number)
+        print("Number of slides in the processed PDF: ", (len(last_slide_indices) + 1 if keep_first_page else 0))
+        print("Some slides may have been removed incorrectly.")
+        print("Please check the output PDF manually.")
+        sys.exit(1)
+        
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Remove duplicate slides from a PDF file.')
