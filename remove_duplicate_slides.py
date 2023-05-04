@@ -15,7 +15,7 @@ def get_slide_number(image):
     slide_number = re.search(r'slide (\d+)', text, re.IGNORECASE)
     return int(slide_number.group(1)) if slide_number else None
 
-def remove_duplicate_slides(pdf_path, keep_first_page):
+def remove_duplicate_slides(pdf_path, keep_first_page, include_unrecognised_pages):
     pdf_reader = PdfReader(pdf_path)
     pdf_writer = PdfWriter()
 
@@ -28,6 +28,12 @@ def remove_duplicate_slides(pdf_path, keep_first_page):
         slide_number = get_slide_number(temp_images[0])
         if slide_number is None:
             print(f"Warning: Page {page+1} is not a slide (slide number not recognised)")
+            if include_unrecognised_pages:
+                print("Keeping page in output PDF")
+                current_slide_number += 1
+                last_slide_indices[current_slide_number] = page
+            else:
+                print("Not including page in output PDF")
             continue
         if slide_number is not None and slide_number > current_slide_number:
             current_slide_number = slide_number
@@ -59,7 +65,10 @@ def remove_duplicate_slides(pdf_path, keep_first_page):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Remove duplicate slides from a PDF file.')
     parser.add_argument('pdf_path', type=str, help='Path to the input PDF file.')
-    parser.add_argument('--keep_first_page', action='store_true', help='Keep the first page of the PDF.')
+    parser.add_argument('--keep-first-page', action='store_true', help='Keep the first page of the PDF.')
+    parser.add_argument('--include-unrecognised-pages',
+                        action='store_true',
+                        help='Keep unrecognised pages (slide number could not be recognised) in PDF - this is usually because images cover the slide number.')
     args = parser.parse_args()
 
-    remove_duplicate_slides(args.pdf_path, args.keep_first_page)
+    remove_duplicate_slides(args.pdf_path, args.keep_first_page, args.include_unrecognised_pages)

@@ -36,5 +36,10 @@ choco install tesseract
 
 ## Usage
 ```
-python remove_duplicate_slides.py <input_pdf_file>
+python remove_duplicate_slides.py <input_pdf_file> [--include-unrecognised-pages] [--keep-first-page]
 ```
+The program will create a new pdf file with the duplicate slides removed. The new pdf file will be named `output_<input_pdf_file>.pdf`.
+
+Options:
+* `--keep-first-page`: Keep the first page of the pdf. This is useful if the first page is a title page or something that you want to keep.
+* `--include-unrecognised-pages`: Include pages that could not be recognised by OCR. This is useful if you have slides that are images or have no text.
